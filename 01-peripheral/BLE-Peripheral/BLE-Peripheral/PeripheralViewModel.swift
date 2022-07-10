@@ -6,7 +6,10 @@ import os
 import SwiftUI
 
 class PeripheralViewModel: NSObject, ObservableObject {
-    private var central: CBCentral?
+    @Published var color: Color = .white
+    @Published var temperature: String = "39.0"
+
+    private var connectedCentral: CBCentral?
     private var temperatureCharacteristic: CBMutableCharacteristic?
     private var colorCharacteristic: CBMutableCharacteristic?
 
@@ -18,6 +21,29 @@ class PeripheralViewModel: NSObject, ObservableObject {
         self.peripheralManager = peripheralManager
         super.init()
         self.peripheralManager.delegate = self
+        
+        TemperatureGenerator().values
+            .assign(to: &$temperature)
+        
+        $temperature
+            .sink { [weak self] value in
+                guard
+                    let self = self,
+                    let temperatureCharacteristic = self.temperatureCharacteristic,
+                    let connectedCentral = self.connectedCentral,
+                    let newValue = self.temperature.data(using: .ascii)
+                else { return }
+
+                temperatureCharacteristic.value = newValue
+
+                // Send notification
+                peripheralManager.updateValue(
+                    newValue,
+                    for: temperatureCharacteristic,
+                    onSubscribedCentrals: [connectedCentral]
+                )
+            }
+            .store(in: &cancellables)
     }
 }
 
@@ -32,7 +58,7 @@ extension PeripheralViewModel {
 
         let temperatureCharacteristic = CBMutableCharacteristic(
             type: DemoService.temperatureUUID,
-            properties: [.read],
+            properties: [.read, .notify],
             value: nil,
             permissions: [.readable]
         )
@@ -103,20 +129,58 @@ extension PeripheralViewModel: CBPeripheralManagerDelegate {
     // MARK: Handle Connection
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
         os_log("Central unsubscribed from characteristic \(characteristic.uuid)")
-        self.central = central
+        connectedCentral = central
     }
 
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {
         os_log("Central unsubscribed from characteristic \(characteristic.uuid)")
-        self.central = nil
+        connectedCentral = nil
     }
 
     // MARK: ATT Requests
     func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveWrite requests: [CBATTRequest]) {
         os_log("Received write requests \(requests.count)")
+        for request in requests {
+            guard
+                request.characteristic == colorCharacteristic,
+                let value = request.value
+            else {
+                os_log("Write not permited for request.characteristic")
+                peripheral.respond(to: requests.first!, withResult: .writeNotPermitted)
+                return
+            }
+
+            guard let color = Color(value) else {
+                os_log("Could not get a color from write request")
+                return
+            }
+
+            self.color = color
+
+            guard
+                let colorCharacteristic = colorCharacteristic,
+                let connectedCentral = connectedCentral
+            else { return }
+            self.colorCharacteristic?.value = value
+
+            peripheralManager.updateValue(value, for: colorCharacteristic, onSubscribedCentrals: [connectedCentral])
+        }
+        
+        peripheral.respond(to: requests.first!, withResult: .success)
     }
 
     func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveRead request: CBATTRequest) {
         os_log("Received read request for characteristic \(request.characteristic.uuid)")
+
+        if request.characteristic == temperatureCharacteristic {
+            request.value = temperatureCharacteristic?.value
+        } else if request.characteristic == colorCharacteristic {
+            request.value = colorCharacteristic?.value
+        } else {
+            os_log("Received invalid read request for characteristic \(request.characteristic.uuid)")
+            peripheral.respond(to: request, withResult: .readNotPermitted)
+        }
+
+        peripheral.respond(to: request, withResult: .success)
     }
 }
