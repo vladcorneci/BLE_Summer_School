@@ -74,9 +74,9 @@
 		81F86ED1287B184D001D83C1 /* BLE-Peripheral */ = {
 			isa = PBXGroup;
 			children = (
+				81F86ED2287B184D001D83C1 /* BLE_PeripheralApp.swift */,
 				81F86F2A287B1B34001D83C1 /* PeripheralViewModel.swift */,
 				81F86F2C287B1F0D001D83C1 /* TemperatureGenerator.swift */,
-				81F86ED2287B184D001D83C1 /* BLE_PeripheralApp.swift */,
 				81F86ED4287B184D001D83C1 /* ContentView.swift */,
 				81F86ED6287B184E001D83C1 /* Assets.xcassets */,
 				81F86ED8287B184F001D83C1 /* Preview Content */,
@@ -306,6 +306,7 @@
 				DEVELOPMENT_TEAM = DHN8EWQMH5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Some text";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -335,6 +336,7 @@
 				DEVELOPMENT_TEAM = DHN8EWQMH5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Some text";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

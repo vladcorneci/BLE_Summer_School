@@ -6,6 +6,9 @@ import os
 import SwiftUI
 
 class PeripheralViewModel: NSObject, ObservableObject {
+    private var temperatureCharacteristic: CBMutableCharacteristic?
+    private var colorCharacteristic: CBMutableCharacteristic?
+
     private let peripheralManager: CBPeripheralManager
 
     private var cancellables = Set<AnyCancellable>()
@@ -19,11 +22,40 @@ class PeripheralViewModel: NSObject, ObservableObject {
 
 extension PeripheralViewModel {
     private func registerGATTProfile() {
-        // TODO: Add implementation
+        let colorCharacteristic = CBMutableCharacteristic(
+            type: DemoService.colorUUID,
+            properties: [.write, .read, .writeWithoutResponse],
+            value: nil,
+            permissions: [.readable, .writeable]
+        )
+
+        let temperatureCharacteristic = CBMutableCharacteristic(
+            type: DemoService.temperatureUUID,
+            properties: [.read],
+            value: nil,
+            permissions: [.readable]
+        )
+
+        let demoService = CBMutableService(
+            type: DemoService.serviceUUID,
+            primary: true
+        )
+
+        self.temperatureCharacteristic = temperatureCharacteristic
+        self.colorCharacteristic = colorCharacteristic
+
+        demoService.characteristics = [
+            temperatureCharacteristic,
+            colorCharacteristic
+        ]
+
+        peripheralManager.add(demoService)
     }
 
-    private func startAdvertising() {
-        // TODO: Add implementation
+    private func startAdvertising(peripheral: CBPeripheralManager) {
+        peripheral.startAdvertising([
+            CBAdvertisementDataServiceUUIDsKey: [DemoService.serviceUUID]
+        ])
     }
 }
 
@@ -38,7 +70,7 @@ extension PeripheralViewModel: CBPeripheralManagerDelegate {
 
             // Register GATT profile & Start Advertising
             registerGATTProfile()
-            startAdvertising()
+            startAdvertising(peripheral: peripheral)
 
         case .poweredOff:
             os_log("CBPeripheralManager is not powered on")
