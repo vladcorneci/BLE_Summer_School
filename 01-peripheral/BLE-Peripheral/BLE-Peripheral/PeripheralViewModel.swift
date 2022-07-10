@@ -6,6 +6,7 @@ import os
 import SwiftUI
 
 class PeripheralViewModel: NSObject, ObservableObject {
+    private var central: CBCentral?
     private var temperatureCharacteristic: CBMutableCharacteristic?
     private var colorCharacteristic: CBMutableCharacteristic?
 
@@ -102,10 +103,12 @@ extension PeripheralViewModel: CBPeripheralManagerDelegate {
     // MARK: Handle Connection
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
         os_log("Central unsubscribed from characteristic \(characteristic.uuid)")
+        self.central = central
     }
 
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {
         os_log("Central unsubscribed from characteristic \(characteristic.uuid)")
+        self.central = nil
     }
 
     // MARK: ATT Requests
